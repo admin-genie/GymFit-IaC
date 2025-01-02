@@ -1,0 +1,40 @@
+---
+- name: Install Jenkins on CentOS 7 / RHEL
+  hosts: localhost
+  become: true
+  tasks:
+
+    - name: Download Jenkins repository file # 젠킨스 repository 주소 등록
+      get_url:
+        url: "https://pkg.jenkins.io/redhat-stable/jenkins.repo"
+        dest: "/etc/yum.repos.d/jenkins.repo"
+        validate_certs: no
+
+    - name: Import Jenkins repository GPG key # 젠킨스 키 등록
+      rpm_key:
+        key: "https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key"
+        state: present
+        validate_certs: no
+
+    - name: Install fontconfig # 젠킨스 실행을 위한 폰트 설정 인스톨
+      yum:
+        name: fontconfig
+        state: latest
+
+    - name: Install Jenkins # 젠킨스 설치
+      yum:
+        name: jenkins
+        state: latest
+    
+    - name: Start Jenkins service # 젠킨스 실행 후 enable 설정
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+    
+    - name: Show jenkins initialAdminPassword # 젠킨스 임시관리자비밀번호 표시
+      shell: |
+              cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: shell_output
+    - name: Print to console
+      debug: msg="{{shell_output.stdout}}"

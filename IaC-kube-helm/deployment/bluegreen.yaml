@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollout-bluegreen
+spec:
+  replicas: 3
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollout-bluegreen
+  template:
+    metadata:
+      labels:
+        app: rollout-bluegreen
+    spec:
+      containers:
+      - name: rollouts-demo
+        image: gymfit/rollouts-demo-blue:latest
+        #image: gymfit/rollouts-demo-green:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8081
+        resources:
+          limits:
+            cpu: "150m"
+            memory: "265Mi"
+          requests:
+            cpu: "100m"
+            memory: "265Mi"
+  strategy:
+    blueGreen: 
+      activeService: rollout-bluegreen-active
+      previewService: rollout-bluegreen-preview
+      autoPromotionEnabled: false
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: rollout-bluegreen-active
+spec:
+  type: NodePort
+  selector:
+    app: rollout-bluegreen
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8081
+    nodePort: 30090
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: rollout-bluegreen-preview
+spec:
+  type: NodePort
+  selector:
+    app: rollout-bluegreen
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8081
+    nodePort: 30091

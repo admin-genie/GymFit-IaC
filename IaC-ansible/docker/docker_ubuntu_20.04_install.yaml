@@ -1,0 +1,39 @@
+- hosts: Ubuntu
+  become: yes
+  tasks:
+    - name: "Installing Docker dependencies" # docker 종속성 패키지 설치
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: "Adding Docker GPG key" # docker GPG 키 추가
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: "Adding Docker repository" # docker repo 등록
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+        filename: docker-ce
+        mode: 0644
+
+    - name: "Updating apt packages" # apt 패키지 업데이트
+      apt:
+        update_cache: yes
+
+    - name: "Installing Docker latest version" # 도커 최신버전 설치
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: "Starting and Enabling Docker service" # 도커 서비스 시작, 시작프로그램 등록
+      service:
+        name: docker
+        state: started
+        enabled: yes

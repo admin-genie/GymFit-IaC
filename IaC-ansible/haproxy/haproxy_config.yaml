@@ -1,0 +1,41 @@
+---
+- name: Generate HAProxy configuration
+  hosts: tag_feat_haproxy
+  gather_facts: no
+  tasks:
+    - name: Install HAProxy
+      yum:
+        name: haproxy
+        state: present
+    
+    - name: Get private IP
+      ansible.builtin.shell: ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | grep -oP '\d+\.\d+\.\d+\.\d+'
+      register: private_ip_result
+
+    - name: Set private IP as a fact
+      set_fact:
+        private_ip: "{{ private_ip_result.stdout }}"
+
+    - name: Gather kube-controller information from /etc/hosts
+      shell: awk '{print $2,$1}' /etc/hosts | grep kube-controller
+      register: kube_controller_hosts
+      changed_when: false
+
+    - name: Render HAProxy configuration template
+      ansible.builtin.template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      vars:
+        kube_controllers:
+          - name: "{{ kube_controller_hosts.stdout_lines[0].split()[0] }}"
+            ip: "{{ kube_controller_hosts.stdout_lines[0].split()[1] }}"
+          - name: "{{ kube_controller_hosts.stdout_lines[1].split()[0] }}"
+            ip: "{{ kube_controller_hosts.stdout_lines[1].split()[1] }}"
+          - name: "{{ kube_controller_hosts.stdout_lines[2].split()[0] }}"
+            ip: "{{ kube_controller_hosts.stdout_lines[2].split()[1] }}"
+        private_ip: "{{ private_ip }}"
+    
+    - name: Restart HAProxy service
+      service:
+        name: haproxy
+        state: restarted

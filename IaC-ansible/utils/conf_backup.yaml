@@ -1,0 +1,4 @@
+- name: Fetch configuration files
+  ansible.builtin.fetch:
+    src: "/etc/software/config.conf"
+    dest: "/path/to/save/config.conf"

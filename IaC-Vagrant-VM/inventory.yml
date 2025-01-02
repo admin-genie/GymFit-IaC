@@ -1,0 +1,58 @@
+192.168.0.17 k8sW
+192.168.0.14 k8sC1
+192.168.0.15 k8sC2
+192.168.0.18 ha1
+192.168.0.19 ha2
+192.168.0.13 db-slave
+192.168.0.3 db-master
+192.168.0.2 dev-server
+
+[local_multi]
+k8sW ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/k8s-W/virtualbox/private_key
+k8sC1 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/k8s-C1/virtualbox/private_key
+k8sC2 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/k8s-C2/virtualbox/private_key
+ha1 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/haproxy/virtualbox/private_key
+ha2 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/haproxy2/virtualbox/private_key
+db-slave ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/k8s-W/virtualbox/private_key
+db-master ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/k8s-W/virtualbox/private_key
+dev-server ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant/machines/k8s-W/virtualbox/private_key
+
+global_defs {
+   router_id VR_1
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth1
+    virtual_router_id 51
+    priority 200
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.0.250
+    }
+}
+
+global_defs {
+   router_id VR_2
+}
+
+vrrp_instance VI_2 {
+    state BACKUP
+    interface eth1
+    virtual_router_id 51
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.0.250
+    }
+}
+
+sudo kubeadm init --control-plane-endpoint 192.168.0.250:6443 --upload-certs

@@ -1,0 +1,166 @@
+- hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Wait 600 seconds for target connection to become reachable/usable
+      wait_for_connection:
+
+    - name: Check if Kubernetes is already set
+      find:
+        paths: /var/lib/kubelet/
+        patterns: config.yaml
+      register: kubeletSet
+
+    - name: End the play for hosts that are already setup
+      meta: end_host
+      when: kubeletSet.matched > 0
+    
+    - name: Install iproute-tc package
+      yum:
+        name: iproute-tc
+        state: present
+
+    - name: Install containerd
+      block:
+        - name: Download containerd
+          get_url:
+            url: "https://github.com/containerd/containerd/releases/download/v1.7.11/containerd-1.7.11-linux-amd64.tar.gz"
+            dest: "/usr/local/src/containerd-1.7.11-linux-amd64.tar.gz"
+
+        - name: Extract containerd
+          unarchive:
+            src: "/usr/local/src/containerd-1.7.11-linux-amd64.tar.gz"
+            dest: "/usr/local"
+            remote_src: yes
+
+        - name: Download containerd service file
+          get_url:
+            url: "https://raw.githubusercontent.com/containerd/containerd/main/containerd.service"
+            dest: "/etc/systemd/system/containerd.service"
+
+        - name: Reload systemd
+          systemd:
+            daemon_reload: yes
+
+        - name: Enable and start containerd
+          service:
+            name: containerd
+            enabled: yes
+            state: started
+      tags: containerd
+
+    - name: Install runc
+      block:
+        - name: Download runc
+          get_url:
+            url: "https://github.com/opencontainers/runc/releases/download/v1.1.10/runc.amd64"
+            dest: "/usr/local/sbin/runc"
+
+        - name: Set runc executable permissions
+          file:
+            path: "/usr/local/sbin/runc"
+            mode: "u+x"
+      tags: runc
+
+    - name: Install CNI plugins
+      block:
+        - name: Download CNI plugins
+          get_url:
+            url: "https://github.com/containernetworking/plugins/releases/download/v1.4.0/cni-plugins-linux-amd64-v1.4.0.tgz"
+            dest: "/usr/local/src/cni-plugins-linux-amd64-v1.4.0.tgz"
+
+        - name: Create directory for CNI plugins
+          file:
+            path: "/opt/cni/bin"
+            state: directory
+
+        - name: Extract CNI plugins
+          unarchive:
+            src: "/usr/local/src/cni-plugins-linux-amd64-v1.4.0.tgz"
+            dest: "/opt/cni/bin"
+            remote_src: yes
+      tags: cni
+
+    - name: Configure cgroup for containerd
+      block:
+        - name: Create directory for containerd
+          file:
+            path: "/etc/containerd"
+            state: directory
+
+        - name: Generate containerd config
+          command: containerd config default
+          register: containerd_config
+
+        - name: Save containerd config to file
+          copy:
+            content: "{{ containerd_config.stdout }}"
+            dest: /etc/containerd/config.toml
+
+        - name: Update containerd config for systemd cgroup
+          command: sh -c 'sudo sed -i "s/SystemdCgroup = false/SystemdCgroup = true/" /etc/containerd/config.toml'
+          args:
+            executable: /bin/bash
+
+        - name: Restart containerd
+          service:
+            name: containerd
+            state: restarted
+
+      tags: containerd_config
+
+    - name: Load kernel modules
+      block:
+        - name: Load kernel modules
+          modprobe:
+            name: "{{ item }}"
+          loop:
+            - overlay
+            - br_netfilter
+
+        - name: Configure kernel parameters
+          sysctl:
+            name: "{{ item.name }}"
+            value: "{{ item.value }}"
+            state: present
+            sysctl_set: yes
+          loop:
+            - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+            - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+            - { name: "net.ipv4.ip_forward", value: "1" }
+      tags: kernel
+
+    - name: Register Kubernetes repository
+      block:
+        - name: Register Kubernetes repository
+          copy:
+            content: |
+              [kubernetes]
+              name=Kubernetes
+              baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+              enabled=1
+              gpgcheck=1
+              gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+              exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+            dest: /etc/yum.repos.d/kubernetes.repo
+      tags: kubernetes_repo
+
+    - name: Install Kubernetes packages
+      block:
+        - name: Install Kubernetes packages
+          yum:
+            name: "{{ item }}"
+            state: present
+            disable_excludes: kubernetes
+          loop:
+            - kubelet
+            - kubeadm
+            - kubectl
+      tags: kubernetes_packages
+
+    - name: Enable kubelet
+      service:
+        name: kubelet
+        enabled: yes
+
+    

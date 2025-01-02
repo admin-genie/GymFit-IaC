@@ -1,0 +1,4 @@
+- name: Fetch installation logs
+  ansible.builtin.fetch:
+    src: "/var/log/install.log"
+    dest: "/path/to/save/install.log"

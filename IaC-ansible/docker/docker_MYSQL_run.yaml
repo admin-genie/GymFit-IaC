@@ -1,0 +1,31 @@
+---
+- name: Configure MySQL Docker container
+  hosts: ec2-user
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3 # ansible이 /usr/bin/python3의 인터프리터를 찾아가도록 변수설정
+  tasks:
+    - name: Install urllib3 version 1.26.8 # url 라이브러리3 설치
+      pip:
+        name: urllib3==1.26.8
+
+    - name: docker-py install # docker전용 python 라이브러리 설치
+      pip:
+        name: docker-py
+        executable: pip3
+
+<<<<<<< HEAD:docker_MYSQL_run.yaml
+    - name: Run MySQL Docker container # mysql 도커 컨테이너 다운로드 및 설치
+=======
+    - name: Run MySQL Docker container # mysql 도커 컨테이너 RUN
+>>>>>>> ee0d4020ba917986f1c5c0bd31a5197f6d8cc714:agent/docker_MYSQL_run.yaml
+      docker_container:
+        name: mysqldb
+        image: mrsono0/mysql_5.7
+        state: started
+        restart_policy: always
+        env:
+          MYSQL_ROOT_PASSWORD: education
+          MYSQL_DATABASE: guestbook
+        ports:
+          - "3306:3306"

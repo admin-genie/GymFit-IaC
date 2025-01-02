@@ -1,0 +1,36 @@
+# .gitignore
+
+# Compiled files
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+*.terraform.lock.hcl
+
+# logs
+*.log
+
+# Directories
+.terraform/
+.vagrant/
+
+# SSH Keys
+*.pem
+.ssh
+
+# Backup files
+*.bak
+
+# Ignored Terraform files
+*gitignore*.tf
+
+# Ignore Mac .DS_Store files
+.DS_Store
+
+# Ignored vscode files
+.vscode/
+
+# Sentinel runtime directory
+.sentinel
+
+# Data file
+*.info

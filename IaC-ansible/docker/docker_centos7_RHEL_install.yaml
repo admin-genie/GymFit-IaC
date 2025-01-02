@@ -1,0 +1,26 @@
+---
+- hosts: CentOS 7
+  become: yes
+  tasks:
+    - name: "Installing Docker yum-utils" # yum-utils 설치
+      yum:
+        name:
+          - yum-utils
+        state: latest
+
+    - name: "Configuring docker-ce repo" # docker-ce 레포 다운로드
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: 0644
+
+    - name: "Installing Docker latest version" # docker latest 버전 다운로드
+      yum:
+        name: docker-ce
+        state: present
+
+    - name: "Starting and Enabling Docker service" # docker 실행 후 시작프로그램 등록
+      service:
+        name: docker
+        state: started
+        enabled: yes

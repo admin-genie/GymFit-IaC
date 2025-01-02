@@ -1,0 +1,11 @@
+- name: Join Kubernetes control plane node to the cluster
+  hosts: tag_Name_kube_controller2, tag_Name_kube_controller3
+  gather_facts: no
+  tasks:
+    - name: Join control plane node to the cluster
+      ansible.builtin.shell: |
+        sudo kubeadm join 10.0.11.127:6443 \
+          --token u6r77p.6abhsvddwf4rhux8 \
+          --discovery-token-ca-cert-hash sha256:41be6d02ae421a5f35837868bb3597638cf7fe8a351a5567a0e6f546044643d2 \
+          --control-plane \
+          --certificate-key b2a54aa180f967648bd7e99cc59ef1aa00df04a98e7f60f658342f4df8d452ac

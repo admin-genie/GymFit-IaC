@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: self-sync-application
+spec:
+  project: default
+  source:
+    repoURL: 'git@github.com:GymFit-Dev/dev-app.git'
+    path: .
+    targetRevision: main
+    directory:
+      recurse: true
+      jsonnet: {}
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

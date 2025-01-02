@@ -1,0 +1,21 @@
+---
+- name: install jenkins_ubuntu_install.yaml
+  hosts: Ubuntu
+  become: true
+  tasks:
+    - name: Install curl # curl 커맨드 설치
+      apt:
+        name: curl
+        state: present
+
+    - name: Download Java 17 Debian package # java 17 Debian 리눅스용 패키지 레포 등록
+      shell: wget --no-check-certificate -O /tmp/jdk-17_linux-x64_bin.deb "https://download.java.net/java/17/latest/jdk-17_linux-x64_bin.deb"
+
+    - name: Update apt packages # apt 업데이트
+      apt:
+        update_cache: yes
+
+    - name: Install Java 17 Debian package # java 17 Debian 패키지 인스톨
+      apt:
+        deb: "/tmp/jdk-17_linux-x64_bin.deb"
+        state: present

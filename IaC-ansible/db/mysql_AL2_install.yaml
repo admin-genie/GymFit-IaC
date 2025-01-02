@@ -1,0 +1,42 @@
+---
+- name: Install MySQL Community Server
+  hosts: localhost
+  become: yes
+  tasks:
+    
+    - name: Install curl # curl 커맨드 설치
+      apt:
+        name: curl
+        state: present
+
+    - name: Download MySQL Community Server packages # mysql server 패키지 curl
+      get_url:
+        url: "https://dev.mysql.com/get/mysql80-community-release-el8-8.noarch.rpm"
+        dest: "/tmp/mysql80-community-release-el8-8.noarch.rpm"
+
+    - name: Install MySQL Community Server repository # mysql 커뮤니티 설치 
+      yum:
+        name: "/tmp/mysql80-community-release-el8-8.noarch.rpm"
+        state: present
+
+    - name: Install MySQL Community Server packages # mysql 서버 패키지 설치
+      yum:
+        name:
+          - mysql-community-common-8.2.0-1.el8.x86_64.rpm
+          - mysql-community-client-plugins-8.2.0-1.el8.x86_64.rpm
+          - mysql-community-libs-8.2.0-1.el8.x86_64.rpm
+          - mysql-community-devel-8.2.0-1.el8.x86_64.rpm
+          - mysql-community-icu-data-files-8.2.0-1.el8.x86_64.rpm
+          - mysql-community-client-8.2.0-1.el8.x86_64.rpm
+          - mysql-community-server-8.2.0-1.el8.x86_64.rpm
+        state: present
+
+    - name: Initialize MySQL Server # MySQL 서버 시작
+      command: sudo mysqld --defaults-file=/etc/my.cnf --initialize-insecure
+      become: yes
+
+    - name: Add MySQL service to firewall # MySQL 방화벽 허용
+      firewalld:
+        service: mysql
+        state: enabled
+        immediate: yes

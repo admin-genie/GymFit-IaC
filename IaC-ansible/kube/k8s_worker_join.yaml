@@ -1,0 +1,9 @@
+- name: Join Kubernetes node to the cluster
+  hosts: tag_Name_kube_worker1, tag_Name_kube_worker2, tag_Name_kube_worker3, tag_Name_kube_worker4
+  gather_facts: no
+  tasks:
+    - name: Join node to the cluster
+      ansible.builtin.shell: |
+        sudo kubeadm join 10.0.11.127:6443 \
+          --token u6r77p.6abhsvddwf4rhux8 \
+          --discovery-token-ca-cert-hash sha256:41be6d02ae421a5f35837868bb3597638cf7fe8a351a5567a0e6f546044643d2

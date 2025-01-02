@@ -1,0 +1,25 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+terraform.tfstate.backup
+
+# Ansible
+*.retry
+*.log
+*.fact
+ansible.cfg
+*.vault_pass
+
+# Temporary Files and Directories
+*.log
+*.swp
+.DS_Store
+__pycache__/
+
+# Generated Files
+*.pem
+*.pub
+*.key
+*.crt

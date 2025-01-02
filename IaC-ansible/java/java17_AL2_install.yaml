@@ -1,0 +1,15 @@
+---
+- name: Install Java 17 AL2
+  hosts: localhost
+  become: true
+  tasks:
+
+    - name: Download Java 17 RPM package # 자바 17 레포지토리 등록
+      get_url:
+        url: "https://download.java.net/java/17/latest/jdk-17_linux-x64_bin.rpm"
+        dest: "/tmp/jdk-17_linux-x64_bin.rpm"
+
+    - name: Install Java 17 RPM package # 자바 17 인스톨
+      yum:
+        name: "/tmp/jdk-17_linux-x64_bin.rpm"
+        state: present

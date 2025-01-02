@@ -1,0 +1,12 @@
+- hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Gather installed package list
+      ansible.builtin.shell: "rpm -qa"
+      register: installed_packages
+
+    - name: Save installed package list to file
+      ansible.builtin.copy:
+        content: "{{ installed_packages.stdout }}"
+        dest: "/path/to/save/installed_packages.txt"

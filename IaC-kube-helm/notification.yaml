@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Notification
+metadata:
+  name: slack-notification
+  namespace: argocd
+spec:
+  destination:
+    webhook:
+      url: {당신의 웹훅 주소를 입력하세요}
+      contentType: application/json
+  eventTypes:
+    - sync
+    - syncFailed
+    - syncInProgress
+    - syncUnknown
+    - syncDegraded
+    - deploy

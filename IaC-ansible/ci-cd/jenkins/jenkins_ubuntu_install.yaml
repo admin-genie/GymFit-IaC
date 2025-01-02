@@ -1,0 +1,54 @@
+- name: install jenkins_ubuntu_install.yaml
+  hosts: tag_OS_ubuntu
+  become: true
+  tasks:
+  
+    - name: Install ca-certificates package # apt 인증서 패키지 설치
+      apt:
+        name: ca-certificates
+        state: present
+
+    - name: Install curl # curl 커맨드 설치
+      apt:
+        name: curl
+        state: present
+
+    - name: Update apt packages # apt 패키지 업데이트
+      apt:
+        update_cache: yes
+
+    - name: Add Jenkins GPG key # ubutnu key서버에서 jenkins apt key 다운로드
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: 5BA31D57EF5975CA
+        state: present
+
+    - name: Add Jenkins repository # jenkins 레포지토리 등록
+      apt_repository:
+        repo: deb http://pkg.jenkins.io/debian-stable binary/
+        state: present
+        filename: jenkins
+
+    - name: Install fontconfig # 젠킨스에 사용되는 fontconfig 설치
+      apt:
+        name: fontconfig
+        state: present
+
+    - name: Install Jenkins # 젠킨스 최근 버전 설치
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Start Jenkins service # 젠킨스 서비스 시작
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Show Jenkins initialAdminPassword # 젠킨스 시작 관리자 패스워드 표시
+      shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: shell_output
+
+    - name: Print to console 
+      debug: 
+        msg: "{{ shell_output.stdout }}"

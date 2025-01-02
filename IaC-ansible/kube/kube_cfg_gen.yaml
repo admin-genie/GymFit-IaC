@@ -1,0 +1,21 @@
+---
+- name: Copy Kubernetes admin.conf to user's .kube directory
+  hosts: localhost
+  tasks:
+    - name: Create .kube directory in user's home directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.kube"
+        state: directory
+
+    - name: Copy admin.conf to user's .kube directory
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ ansible_env.HOME }}/.kube/config"
+        remote_src: yes
+        mode: '0644'
+
+    - name: Change ownership of the config file
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.kube/config"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"

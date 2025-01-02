@@ -1,0 +1,44 @@
+---
+- name: Copy file with owner and permissions
+  hosts: all
+  gather_facts: no
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Copy file with specific owner and permissions
+      ansible.builtin.copy:
+        src: "./hosts"
+        dest: "/etc/hosts"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Get private IP
+      ansible.builtin.shell: 
+        cmd: ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | grep -oP '\d+\.\d+\.\d+\.\d+'
+      register: private_ip_result
+
+    - name: Extract hostname associated with private IP
+      ansible.builtin.shell:
+        cmd: awk -v ip="{{ private_ip_result.stdout }}" '$1 == ip {print $2}' /etc/hosts
+      register: new_hostname_result
+
+    - name: Set hostname
+      hostname:
+        name: "{{ new_hostname_result.stdout }}"
+
+    - name: Ensure localhost entry in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1'
+        line: '127.0.0.1 localhost'
+        state: present
+
+    - name: Update /etc/hosts with both IPv4 and IPv6 localhost
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^(127\.0\.1\.1|::1)\s+'
+        line: |
+          127.0.1.1 {{ new_hostname_result.stdout }}
+          ::1  localhost6 localhost6.localdomain6
+        state: present

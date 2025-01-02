@@ -1,0 +1,96 @@
+- hosts: localhost
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Wait 600 seconds for target connection to become reachable/usable
+      wait_for_connection:
+
+    - name: Check if Kubernetes is already set
+      find:
+        paths: /var/lib/kubelet/
+        patterns: config.yaml
+      register: kubeletSet
+
+    - name: End the play for hosts that are already setup
+      meta: end_host
+      when: kubeletSet.matched > 0
+
+    - name: Install python SELinux dependencies
+      yum:
+        name:
+          - libselinux-python3
+          - policycoreutils-python-utils
+        state: present
+
+    - name: Set SELinux to permissive
+      lineinfile:
+        path: /etc/selinux/config
+        regexp: "^SELINUX="
+        line: SELINUX=permissive
+
+    - name: Disable swap for current session
+      command: swapoff -a
+
+    - name: Disable swap permanently, persist reboots
+      replace:
+        path: /etc/fstab
+        regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+        replace: '#\1\2\3swap\4'
+        backup: yes
+
+    - name: Install yum-utils
+      package:
+        name: yum-utils
+        state: present
+
+    - name: Add Docker repository
+      yum_repository:
+        name: docker-ce
+        description: Docker CE YUM repo
+        baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
+
+    - name: Check if Kubernetes repository configuration exists
+      shell: grep -q "baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/" /etc/yum.repos.d/kubernetes.repo
+      register: kubernetes_repo_check
+      ignore_errors: true
+
+    - name: Add Kubernetes repository configuration
+      lineinfile:
+        path: /etc/yum.repos.d/kubernetes.repo
+        line: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+          exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+      become: true
+      when: kubernetes_repo_check.rc != 0
+
+    - name: Install Docker
+      package:
+        name: docker-ce
+        state: present
+
+    - name: Enable docker
+      service:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Install kubernetes packages
+      yum:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+
+    - name: Enable kubelet
+      service:
+        name: kubelet
+        enabled: yes

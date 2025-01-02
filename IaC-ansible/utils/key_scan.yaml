@@ -1,0 +1,45 @@
+- name: Get SSH keys
+  hosts: all
+  gather_facts: no
+  connection: local
+  vars:
+    - known_hosts: "~/.ssh/known_hosts"
+  tasks:
+    - name: Get all host keys
+      delegate_to: "{{ jump_host|default('localhost') }}"
+      # access host's ansible_host explicitly as 'ansible_host' will change to localhost or jump_host if not defined
+      command: "ssh-keyscan -t rsa -p {{ansible_port|default(22)}} {{hostvars[inventory_hostname].ansible_host|default(inventory_hostname)}}"
+      register: "host_keys"
+      changed_when: false
+
+    - assert:
+        that: host_keys.stdout
+        msg: "We did not get SSH key for {{inventory_hostname}}"
+
+- name: Create known hosts file
+  hosts: localhost
+  vars:
+    - known_hosts: "~/.ssh/known_hosts"
+  tasks:
+    - name: Stat known_hosts file for existance
+      stat: path="{{ known_hosts }}"
+      register: fstat
+
+    - name: Create known_hosts file if non-existing
+      copy: content="\n" dest="{{ known_hosts }}"
+      when: "not fstat.stat.exists"
+      changed_when: false
+
+    - blockinfile:
+        dest: "{{known_hosts}}"
+        marker: "# {mark} This part managed by Ansible"
+        block: |
+          {% for h in groups['all'] | sort if hostvars[h].host_keys is defined and hostvars[h].host_keys.stdout is defined  %}
+          {%  if hostvars[h].ansible_port is defined %}
+          {%   for key in hostvars[h].host_keys.stdout_lines %}
+          {{ key.partition(" ")[0] }} {{ key.partition(" ")[2] }}
+          {%   endfor %}
+          {%  else %}
+          {{ hostvars[h].host_keys.stdout }}
+          {%  endif %}
+          {% endfor %}
