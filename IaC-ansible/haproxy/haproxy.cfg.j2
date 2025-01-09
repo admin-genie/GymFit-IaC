@@ -7,7 +7,7 @@
 #---------------------------------------------------------------------
 
 #---------------------------------------------------------------------
-# Global settings
+# Global settings  # 전역 설정
 #---------------------------------------------------------------------
 global
     # to have these messages end up in /var/log/haproxy.log you will
@@ -62,7 +62,7 @@ defaults
     maxconn                 3000
 
 #---------------------------------------------------------------------
-# main frontend which proxys to the backends
+# main frontend which proxys to the backends  # 메인 프론트엔드 정의
 #---------------------------------------------------------------------
 frontend main
     bind *:5000
@@ -73,14 +73,14 @@ frontend main
     default_backend             app
 
 #---------------------------------------------------------------------
-# static backend for serving up images, stylesheets and such
+# static backend for serving up images, stylesheets and such  # static 백엔드 정의
 #---------------------------------------------------------------------
 backend static
     balance     roundrobin
     server      static 127.0.0.1:4331 check
 
 #---------------------------------------------------------------------
-# round robin balancing between the various backends
+# round robin balancing between the various backends  # app 백엔드 정의(라운드로빈 방식)
 #---------------------------------------------------------------------
 backend app
     balance     roundrobin
@@ -89,13 +89,13 @@ backend app
     server  app3 127.0.0.1:5003 check
     server  app4 127.0.0.1:5004 check
 
-frontend kube-controller
+frontend kube-controller  # kube-controller 프론트엔드 정의
     bind *:6443
     mode tcp
     option tcplog
     default_backend kube-controller
 
-backend kube-controller
+backend kube-controller   # kube-controller 백엔드 정의 (라운드 로빈)
     mode tcp
     balance roundrobin
     option tcp-check

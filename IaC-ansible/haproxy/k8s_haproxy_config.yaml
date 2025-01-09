@@ -1,32 +1,37 @@
----
 - name: Generate HAProxy configuration
   hosts: tag_feat_haproxy
   gather_facts: no
   tasks:
+  
+    # HAProxy 설치
     - name: Install HAProxy
       yum:
         name: haproxy
         state: present
-    
-    - name: Get private IP
+
+    # 호스트의 private IP 가져오기   
+    - name: Get private IP  
       ansible.builtin.shell: ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | grep -oP '\d+\.\d+\.\d+\.\d+'
       register: private_ip_result
-
+    
+    # private IP를 변수로 설정
     - name: Set private IP as a fact
       set_fact:
         private_ip: "{{ private_ip_result.stdout }}"
 
+    # /etc/hosts 파일에서 kube-controller 정보 가져오기
     - name: Gather kube-controller information from /etc/hosts
       shell: awk '{print $2,$1}' /etc/hosts | grep kube-controller
       register: kube_controller_hosts
       changed_when: false
 
+    # HAProxy 설정 템플릿 렌더링
     - name: Render HAProxy configuration template
       ansible.builtin.template:
         src: haproxy.cfg.j2
         dest: /etc/haproxy/haproxy.cfg
       vars:
-        kube_controllers:
+        kube_controllers:  # kube-controller 정보를 변수로 설정
           - name: "{{ kube_controller_hosts.stdout_lines[0].split()[0] }}"
             ip: "{{ kube_controller_hosts.stdout_lines[0].split()[1] }}"
           - name: "{{ kube_controller_hosts.stdout_lines[1].split()[0] }}"
@@ -35,6 +40,7 @@
             ip: "{{ kube_controller_hosts.stdout_lines[2].split()[1] }}"
         private_ip: "{{ private_ip }}"
     
+    # HAProxy 서비스 재시작  
     - name: Restart HAProxy service
       service:
         name: haproxy
