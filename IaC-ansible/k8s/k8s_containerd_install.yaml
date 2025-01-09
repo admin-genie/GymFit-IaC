@@ -2,24 +2,24 @@
   become: true
   become_method: sudo
   tasks:
-    - name: Wait 600 seconds for target connection to become reachable/usable
-      wait_for_connection:
 
-    - name: Check if Kubernetes is already set
-      find:
-        paths: /var/lib/kubelet/
-        patterns: config.yaml
-      register: kubeletSet
+    # 대상 노드 연결 대기 설치 확인
+    - name: check for install
+      block:
+        - name: Wait 600 seconds for target connection to become reachable/usable
+          wait_for_connection:
 
-    - name: End the play for hosts that are already setup
-      meta: end_host
-      when: kubeletSet.matched > 0
-    
-    - name: Install iproute-tc package
-      yum:
-        name: iproute-tc
-        state: present
+        - name: Check if Kubernetes is already set
+          find:
+            paths: /var/lib/kubelet/
+            patterns: config.yaml
+          register: kubeletSet
 
+        - name: End the play for hosts that are already setup
+          meta: end_host
+          when: kubeletSet.matched > 0
+
+    # containerd 설치
     - name: Install containerd
       block:
         - name: Download containerd
@@ -47,8 +47,10 @@
             name: containerd
             enabled: yes
             state: started
-      tags: containerd
+      tags:
+        - containerd
 
+    # runc 다운로드
     - name: Install runc
       block:
         - name: Download runc
@@ -60,8 +62,10 @@
           file:
             path: "/usr/local/sbin/runc"
             mode: "u+x"
-      tags: runc
+      tags:
+        - runc
 
+    # CNI 플러그인 설치
     - name: Install CNI plugins
       block:
         - name: Download CNI plugins
@@ -79,8 +83,10 @@
             src: "/usr/local/src/cni-plugins-linux-amd64-v1.4.0.tgz"
             dest: "/opt/cni/bin"
             remote_src: yes
-      tags: cni
+      tags:
+        - cni
 
+    # CNI 플러그인 추출
     - name: Configure cgroup for containerd
       block:
         - name: Create directory for containerd
@@ -106,9 +112,10 @@
           service:
             name: containerd
             state: restarted
+      tags:
+        - containerd_config
 
-      tags: containerd_config
-
+    # 커널 모듈 로드
     - name: Load kernel modules
       block:
         - name: Load kernel modules
@@ -125,11 +132,14 @@
             state: present
             sysctl_set: yes
           loop:
-            - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
-            - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+            - { name: "net.ipv6.conf.all.disable_ipv6", value: "1" }
+            - { name: "net.ipv6.conf.default.disable_ipv6", value: "1" }
+            - { name: "net.ipv6.conf.lo.disable_ipv6", value: "1" }
             - { name: "net.ipv4.ip_forward", value: "1" }
-      tags: kernel
+      tags:
+        - kernel
 
+    # 쿠버네티스 저장소 등록
     - name: Register Kubernetes repository
       block:
         - name: Register Kubernetes repository
@@ -143,8 +153,10 @@
               gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
               exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
             dest: /etc/yum.repos.d/kubernetes.repo
-      tags: kubernetes_repo
+      tags:
+        - kubernetes_repo
 
+    # 쿠버네티스 패키지 설치
     - name: Install Kubernetes packages
       block:
         - name: Install Kubernetes packages
@@ -156,11 +168,14 @@
             - kubelet
             - kubeadm
             - kubectl
-      tags: kubernetes_packages
+      tags:
+        - kubernetes_packages
 
-    - name: Enable kubelet
+    # kubelet 활성화
+    - name: Enable and start kubelet
       service:
         name: kubelet
         enabled: yes
-
-    
+        state: started
+      tags:
+        - kubelet

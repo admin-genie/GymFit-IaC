@@ -4,11 +4,13 @@
   become: yes
   tasks:
 
+    # 커널 모듈 로드를 위한 구성 파일 생성
     - name: Create k8s.conf file if it doesn't exist
       file:
         path: /etc/modules-load.d/k8s.conf
         state: touch
 
+    # 커널 모듈 추가(영구 적용)
     - name: Load kernel modules
       command: "{{ item }}"
       loop:
@@ -16,12 +18,14 @@
         - "echo br_netfilter >> /etc/modules-load.d/k8s.conf"
       notify: Reload kernel modules
 
+    # 커널 모듈 즉시 적용
     - name: Load kernel modules immediately
       command: "{{ item }}"
       loop:
         - "modprobe overlay"
         - "modprobe br_netfilter"
-
+        
+    # sysctl 파라미터 구성 및 저장
     - name: Configure sysctl parameters
       copy:
         content: |
@@ -33,11 +37,12 @@
       notify: Apply sysctl parameters
 
   handlers:
-    - name: Reload kernel modules
+    - name: Reload kernel modules  # 커널 모듈 재적용용
       shell: "modprobe {{ item }}"
       loop:
         - overlay
         - br_netfilter
 
+    # sysctl 파라미터 즉시 반영
     - name: Apply sysctl parameters
       command: sysctl --system

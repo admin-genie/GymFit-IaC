@@ -3,22 +3,6 @@ resource "aws_security_group" "bastion_sg" {
   name   = "${var.naming}_bastion_sg"
   vpc_id = var.defVpcId
 
-  # dynamic "ingress" {
-  #   for_each = [for s in var.bastion_ingress_rules : {
-  #     from_port = s.from_port
-  #     to_port   = s.to_port
-  #     desc      = s.desc
-  #     cidr_blocks     = [s.cidr_blocks]
-  #   }]
-  #   content {
-  #     from_port   = ingress.value.from_port
-  #     to_port     = ingress.value.to_port
-  #     cidr_blocks = ingress.value.cidr_blocks
-  #     protocol    = "tcp"
-  #     description = ingress.value.desc
-  #   }
-  # }
-
   ingress {
     from_port   = 22
     to_port     = 22
@@ -43,9 +27,16 @@ resource "aws_security_group" "alb_sg" {
   vpc_id = var.defVpcId
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -60,6 +51,7 @@ resource "aws_security_group" "alb_sg" {
     Name = "${var.naming}_alb_sg"
   }
 }
+
 resource "aws_security_group" "kube_controller_sg" {
   name   = "${var.naming}_kube_controller_sg"
   vpc_id = var.defVpcId
@@ -79,27 +71,20 @@ resource "aws_security_group" "kube_controller_sg" {
   }
 
   dynamic "ingress" {
-    for_each = [for s in var.kube_controller_ingress_rules : {
-      from_port   = s.from_port
-      to_port     = s.to_port
-      desc        = s.desc
-      cidr_blocks = [s.cidr_blocks]
-    }]
+    for_each = var.kube_controller_ingress_rules
     content {
-      from_port   = ingress.value.from_port
-      to_port     = ingress.value.to_port
-      cidr_blocks = [var.cidrBlock]
-      protocol    = "tcp"
-      description = ingress.value.desc
+      from_port       = ingress.value.from_port
+      to_port         = ingress.value.to_port
+      protocol        = "tcp"
+      security_groups = [aws_security_group.alb_sg.id]
     }
   }
 
   ingress {
-    from_port   = "0"
-    to_port     = "0"
+    from_port   = 0
+    to_port     = 0
     protocol    = "-1"
     self        = true
-    description = "Self Refer"
   }
 
   egress {
@@ -131,6 +116,7 @@ resource "aws_security_group" "kube_worker_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
+
   ingress {
     from_port       = 30443
     to_port         = 30443
@@ -139,27 +125,20 @@ resource "aws_security_group" "kube_worker_sg" {
   }
 
   dynamic "ingress" {
-    for_each = [for s in var.kube_worker_ingress_rules : {
-      from_port   = s.from_port
-      to_port     = s.to_port
-      desc        = s.desc
-      cidr_blocks = [s.cidr_blocks]
-    }]
+    for_each = var.kube_worker_ingress_rules
     content {
-      from_port   = ingress.value.from_port
-      to_port     = ingress.value.to_port
-      cidr_blocks = [var.cidrBlock]
-      protocol    = "tcp"
-      description = ingress.value.desc
+      from_port       = ingress.value.from_port
+      to_port         = ingress.value.to_port
+      protocol        = "tcp"
+      security_groups = [aws_security_group.alb_sg.id]
     }
   }
 
   ingress {
-    from_port   = "0"
-    to_port     = "0"
+    from_port   = 0
+    to_port     = 0
     protocol    = "-1"
     self        = true
-    description = "Self Refer"
   }
 
   egress {
@@ -176,37 +155,34 @@ resource "aws_security_group" "kube_worker_sg" {
 
 resource "aws_security_group" "db_mysql_sg" {
   name        = "${var.naming}-mysql-sg"
-  description = "Security group for MySQL instances"
-
-  vpc_id = var.defVpcId
+  vpc_id      = var.defVpcId
 
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
     security_groups = [aws_security_group.bastion_sg.id]
   }
 
   ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
     security_groups = [aws_security_group.bastion_sg.id]
   }
 
   ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
     security_groups = [aws_security_group.kube_worker_sg.id]
-  }  
+  }
 
   ingress {
-    from_port   = "0"
-    to_port     = "0"
+    from_port   = 0
+    to_port     = 0
     protocol    = "-1"
     self        = true
-    description = "Self Refer"
   }
 
   egress {
@@ -214,6 +190,7 @@ resource "aws_security_group" "db_mysql_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
   }
 
   tags = {

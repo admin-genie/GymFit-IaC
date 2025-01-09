@@ -51,10 +51,10 @@ resource "aws_lb_target_group" "monitoring_tg" {
   }
 }
 
-resource "aws_lb_target_group" "kube_nlb_tg" {
-  name        = "${var.naming}-nlb-tg"
+resource "aws_lb_target_group" "kube_alb_tg" {
+  name        = "${var.naming}-alb-tg"
   port        = 6443
-  protocol    = "TCP"
+  protocol    = "HTTPS"
   target_type = "ip"
   vpc_id      = var.defVpcId
 
@@ -76,35 +76,57 @@ resource "aws_lb" "srv_alb" {
   subnets            = var.pubSubIds
 }
 
-resource "aws_lb" "kube_nlb" {
-  name                             = "${var.naming}-kube-nlb"
+resource "aws_lb" "kube_alb" {
+  name                             = "${var.naming}-kube-alb"
   internal                         = true
-  load_balancer_type               = "network"
+  load_balancer_type               = "application"
   subnets                          = [var.pvtAppSubCIds, var.pvtAppSubAIds]
   idle_timeout                     = 400
   enable_cross_zone_load_balancing = true
+  security_groups            = [aws_security_group.alb_sg.id]
 }
 
-# LB Listener
-resource "aws_lb_listener" "srv_alb_http" {
-  load_balancer_arn = aws_lb.srv_alb.arn
-  port              = 80
-  protocol          = "HTTP"
+resource "aws_acm_certificate" "kube_api_cert" {
+  domain_name       = "api.gymfit.site"
+  validation_method = "DNS"
 
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.service_tg.arn
+  lifecycle {
+    ignore_changes = [tags]
+  }
+
+  tags = {
+    Name = "kube-api-cert"
   }
 }
 
-resource "aws_lb_listener" "argocd_alb_nodeport" {
-  load_balancer_arn = aws_lb.srv_alb.arn
-  port              = 81
-  protocol          = "HTTP"
+data "aws_acm_certificate" "kube_api_cert_data" {
+  domain = aws_acm_certificate.kube_api_cert.domain_name
+}
+
+# LB Listener
+resource "aws_lb_listener" "kube_api" {
+  load_balancer_arn = aws_lb.kube_alb.arn
+  port              = "6443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = data.aws_acm_certificate.kube_api_cert_data.arn
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.argocd_tg.arn
+    target_group_arn = aws_lb_target_group.kube_alb_tg.arn
+  }
+}
+
+resource "aws_lb_listener" "argocd_listener" {
+  load_balancer_arn = aws_lb.srv_alb.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate.kube_api_cert.arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.argocd_tg.arn 
   }
 }
 
@@ -116,17 +138,6 @@ resource "aws_lb_listener" "monitoring_alb_nodeport" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.monitoring_tg.arn
-  }
-}
-
-resource "aws_lb_listener" "kube_api" {
-  load_balancer_arn = aws_lb.kube_nlb.arn
-  port              = "6443"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.kube_nlb_tg.arn
   }
 }
 
@@ -169,7 +180,7 @@ resource "aws_instance" "kube_controller" {
   subnet_id     = count.index % 2 == 0 ? var.pvtAppSubAIds : var.pvtAppSubCIds
   key_name      = var.keyName
 
-  vpc_security_group_ids = [var.kubeControllerSGIds]
+  vpc_security_group_ids = [var.kubeControllerSGIds, var.albSGIds]
 
   root_block_device {
     volume_size = var.kubeCtlVolume
@@ -186,7 +197,7 @@ resource "aws_instance" "kube_controller" {
 
 resource "aws_lb_target_group_attachment" "tg-attach_controller" {
   count            = var.kubeCtlCount
-  target_group_arn = aws_lb_target_group.kube_nlb_tg.arn
+  target_group_arn = aws_lb_target_group.kube_alb_tg.arn
   target_id        = element(aws_instance.kube_controller.*.private_ip, count.index)
 }
 
@@ -197,7 +208,7 @@ resource "aws_instance" "kube_worker" {
   subnet_id     = count.index % 2 == 0 ? var.pvtAppSubAIds : var.pvtAppSubCIds
   key_name      = var.keyName
 
-  vpc_security_group_ids = [var.kubeWorkerSGIds]
+  vpc_security_group_ids = [var.kubeControllerSGIds, var.albSGIds]
 
   root_block_device {
     volume_size = var.kubeNodVolume

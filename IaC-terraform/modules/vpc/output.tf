@@ -21,5 +21,3 @@ output "pri_db_sub_c_ids" {
 output "public_sub_ids" {
   value = [aws_subnet.pub_a.id, aws_subnet.pub_c.id]
 }
-
-

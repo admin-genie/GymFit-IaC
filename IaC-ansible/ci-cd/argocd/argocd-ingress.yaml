@@ -1,0 +1,29 @@
+# 운영 환경에서는 TLS를 적용해야 함
+# 테라폼에서 리소스 생성 후 terraform output -json > terraform_output.json 명령어로 Terraform Output 값을 JSON 파일로 저장
+# 이후 동적으로 생성된 ALB DNS 이름을 끌어올 수 있음
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  tls:
+  - hosts:
+    - $(terraform output -json kube_alb_dns | jq -r '.kube_alb_dns')
+    secretName: argocd-server-tls
+  rules:
+  - host: $(terraform output -json kube_alb_dns | jq -r '.kube_alb_dns')
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              name: https

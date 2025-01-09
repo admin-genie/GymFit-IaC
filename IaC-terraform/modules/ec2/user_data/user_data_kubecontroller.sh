@@ -1,4 +1,6 @@
 #!/bin/bash -x
+
+# Ansible 설치
 sudo yum install ansible -y
 ansible --version
 sudo yum install python3-pip -y

@@ -2,6 +2,8 @@
   become: true
   become_method: sudo
   tasks:
+
+    # 대상 노드 연결 대기 설치 확인
     - name: Wait 600 seconds for target connection to become reachable/usable
       wait_for_connection:
 
@@ -15,6 +17,7 @@
       meta: end_host
       when: kubeletSet.matched > 0
 
+    # SELinu 설정
     - name: Install python SELinux dependencies
       yum:
         name:
@@ -31,6 +34,7 @@
     - name: Disable swap for current session
       command: swapoff -a
 
+    # swap 비활성화
     - name: Disable swap permanently, persist reboots
       replace:
         path: /etc/fstab
@@ -38,11 +42,13 @@
         replace: '#\1\2\3swap\4'
         backup: yes
 
+    # yum-utils 패키지 설치
     - name: Install yum-utils
       package:
         name: yum-utils
         state: present
 
+    # Docker 저장소 추가
     - name: Add Docker repository
       yum_repository:
         name: docker-ce
@@ -52,12 +58,13 @@
         enabled: yes
         gpgkey: https://download.docker.com/linux/centos/gpg
 
+    # Kubernetes 저장소 존재 여부 확인
     - name: Check if Kubernetes repository configuration exists
       shell: grep -q "baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/" /etc/yum.repos.d/kubernetes.repo
       register: kubernetes_repo_check
       ignore_errors: true
 
-    - name: Add Kubernetes repository configuration
+    - name: Add Kubernetes repository configuration  # 없을 경우 추가
       lineinfile:
         path: /etc/yum.repos.d/kubernetes.repo
         line: |
@@ -70,18 +77,21 @@
           exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
       become: true
       when: kubernetes_repo_check.rc != 0
-
+    
+    # Docker 설치
     - name: Install Docker
       package:
         name: docker-ce
         state: present
 
+    # Docker 서비스 활성화 및 시작
     - name: Enable docker
       service:
         name: docker
         enabled: yes
         state: started
 
+    # Kubernetes 패키지 설치
     - name: Install kubernetes packages
       yum:
         name:
@@ -89,7 +99,8 @@
           - kubeadm
           - kubectl
         state: present
-
+        
+    # kubelet 서비스 활성화
     - name: Enable kubelet
       service:
         name: kubelet

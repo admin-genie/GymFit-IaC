@@ -1,4 +1,3 @@
-
 cidrBlock = {
     default = "10.0.0.0/16"
 }
@@ -57,6 +56,7 @@ kube_controller_ingress_rules = [
     desc = "nodeport allowd"
   }
 ]
+
 kube_worker_ingress_rules = [
   {
     from_port   = 10250

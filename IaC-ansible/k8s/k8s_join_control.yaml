@@ -2,7 +2,7 @@
   hosts: tag_Name_kube_controller2, tag_Name_kube_controller3
   gather_facts: no
   tasks:
-    - name: Join control plane node to the cluster
+    - name: Join control plane node to the cluster  # 컨트롤 플레인 노드를 클러스터에 조인
       ansible.builtin.shell: |
         sudo kubeadm join 10.0.11.127:6443 \
           --token u6r77p.6abhsvddwf4rhux8 \

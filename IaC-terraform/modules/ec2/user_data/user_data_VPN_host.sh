@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# Install LibreSwan
+# LibreSwan 설치
 yum install libreswan -y
 
 echo "net.ipv4.ip_forward=1" >>/etc/sysctl.conf

@@ -38,7 +38,6 @@ resource "aws_s3_bucket_ownership_controls" "tf_backend_ownership" {
   }
 }  
 
-
 # Configure AWS Provider
 provider "aws" {
   region = "sa-east-1"
@@ -89,4 +88,3 @@ module "instance" {
   kubeNodCount  = 3
   keyName       = "gf-prd-ec2"
 }
-
