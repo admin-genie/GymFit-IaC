@@ -1,0 +1,5 @@
+- `conf_backup.yaml` : 설정 파일 백업
+- `copy_log.yaml` : 설치 로그 백업
+- `gen_hosts.yaml` : 네트워크 설정 관리 및 호스트 이름 일관성 유지
+- `installed_package,yaml` : 시스템 상태 파악
+- `key_scan.yaml` : SSH 연결 자동화
