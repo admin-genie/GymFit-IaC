@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 #테라폼 Output 파일 생성
 terraform output -json >output.json
