@@ -1,5 +1,5 @@
 ---
-- name: Install Jenkins on CentOS 7 / RHEL
+- name: Install Jenkins on CentOS 7/RHEL
   hosts: localhost
   become: true
   tasks:
