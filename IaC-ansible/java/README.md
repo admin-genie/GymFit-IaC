@@ -1,0 +1,3 @@
+- `java17_AL2_install.yaml` : Amazon Linux 2 인스턴스에 Java 17 설치
+- `java17_centos7_RHEL_install.yaml` : CentOS 7/RHEL 인스턴스에 Java 17 설치
+- `java17_ubuntu_install.yaml` : Ubuntu 인스턴스에 Java 17 설치
