@@ -1,0 +1,3 @@
+- `mysql_community_server_install.yaml` : EL8(Enterprise Linux 8) 계열의 시스템 (e.g., CentOS 8, Rocky Linux 8, AlmaLinux 8)에 MySQL Community Server 설치
+- `mysql.primary.cfg.j2` : MySQL Master 서버 설정
+- `mysql.secondary.cfg.j2` : MySQL Slave 서버 설정
