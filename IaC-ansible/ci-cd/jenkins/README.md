@@ -1,0 +1,3 @@
+- `jenkins_install_centos_secure.yaml` : CentOS 7/RHEL에 Jenkins 설치(SSL 인증서 지정)<br>
+- `jenkins_install_centos.yaml` : CentOS 7/RHEL에 Jenkins 설치<br>
+- `jenkins_install_ubuntu.yaml` : Ubuntu에 Jenkins 설치<br>
