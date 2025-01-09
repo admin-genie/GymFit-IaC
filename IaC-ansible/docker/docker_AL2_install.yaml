@@ -2,22 +2,27 @@
 - hosts: all
   become: yes
   tasks:
-    - name: "Installing yum-utils" # yum-utils 인스톨
+
+    # yum-utils 인스톨
+    - name: "Installing yum-utils"
       yum:
         name:
           - yum-utils
         state: latest
-    
-    - name: "amazon-linux-extras Docker repo enable" # amazon-linux-extras docker version 사용 설정
+
+     # amazon-linux-extras docker version 사용 설정  
+    - name: "amazon-linux-extras Docker repo enable"
       command: amazon-linux-extras enable docker
       changed_when: false
 
-    - name: "Installing Docker latest version" # docker latest 버전 설치
+    # docker latest 버전 설치
+    - name: "Installing Docker latest version"
       yum:
         name: docker
         state: present
 
-    - name: "Starting and Enabling Docker service" # docker 시작, docker 시작프로그램 등록
+    # docker 시작, docker 시작프로그램 등록
+    - name: "Starting and Enabling Docker service"
       service:
         name: docker
         state: started
@@ -29,7 +34,8 @@
         groups: docker
         append: yes
 
-    - name: Add jenkins user to docker group # Jenkins 사용환경을 위한 docker group 추가 설정
+    # Jenkins 사용환경을 위한 docker group 추가 설정
+    - name: Add jenkins user to docker group
       user:
         name: ec2-user
         groups: docker
