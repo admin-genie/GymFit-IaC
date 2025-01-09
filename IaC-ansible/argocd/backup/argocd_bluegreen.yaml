@@ -3,7 +3,7 @@ kind: Rollout
 metadata:
   name: rollout-bluegreen
 spec:
-  replicas: 3
+  replicas: 10
   revisionHistoryLimit: 2
   selector:
     matchLabels:
@@ -22,11 +22,9 @@ spec:
           - containerPort: 8081
         resources:
           limits:
-            cpu: "150m"
-            memory: "265Mi"
+            cpu: "300m"
           requests:
-            cpu: "100m"
-            memory: "265Mi"
+            cpu: "300m"
   strategy:
     blueGreen: 
       activeService: rollout-bluegreen-active

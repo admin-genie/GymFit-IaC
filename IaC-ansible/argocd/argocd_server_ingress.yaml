@@ -1,0 +1,25 @@
+- name: Apply Argo CD Ingress
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: argocd-server-ingress
+        namespace: argocd
+        annotations:
+          alb.ingress.kubernetes.io/scheme: internet-facing
+          alb.ingress.kubernetes.io/target-type: ip
+          alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+          alb.ingress.kubernetes.io/certificate-arn: "{{ lookup('terraform_output', 'certificate_arn', module_path='/path/to/terraform') }}" # Terraform output에서 certificate ARN 가져오기
+      spec:
+        rules:
+        - host: "{{ lookup('terraform_output', 'alb_dns_name', module_path='/path/to/terraform') }}" # Terraform output에서 ALB DNS name 가져오기
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: argocd-server
+                  port:
+                    name: https
