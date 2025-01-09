@@ -14,6 +14,6 @@ output "db-ip" {
   value = module.instance.db_ips
 }
 
-output "kube-nlb-dns" {
-  value = module.instance.kube_nlb_dns
+output "kube-alb-dns" {
+  value = module.instance.kube_alb_dns
 }
