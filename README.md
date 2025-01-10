@@ -23,12 +23,12 @@
 - `InfraAutomation.sh` 스크립트를 실행하여 AWS 리전 및 가용 영역, VPC CIDR 대역 등 기본 정보 입력
 - 스크립트는 Terraform을 사용하여 다음과 같은 AWS 리소스를 프로비저닝
 1. VPC, Public Subnet, Private Subnet(App, DB)
-2. Security GroupSecurity Group (Bastion Host, ALB, Kubernetes Controller, Kubernetes Worker, DB)
-3. Internet Gateway, NAT Gateway, Route Table
+2. Internet Gateway, NAT Gateway, Route Table
+3. Security Group(Bastion Host, ALB, Kubernetes Controller, Kubernetes Worker, DB)
 4. EC2 Instance(Bastion Host, Kubernetes Controller, Kubernetes Worker, DB)
 5. Load Balancer(Public ALB, Private ALB)
-6. Target Group(외부 서비스, ArgoCD, Monitoring, Kubernetes ALB)
-7. Listene (ArgoCD, Monitoring, Kubernetes API)
+6. Target Group(외부 서비스, Argo CD, Monitoring, Kubernetes ALB)
+7. Listene(Argo CD, Monitoring, Kubernetes API)
 8. SSH Key Pair
 - modules 디렉토리에 있는 Terraform 모듈을 사용하여 리소스를 모듈화하고 재사용성을 높임
 - `terraform output -json` 명령어를 사용하여 생성된 리소스 정보를 output.json 파일로 저장
