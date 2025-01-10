@@ -3,7 +3,7 @@
 - `k8s_configure_node.yaml` :  Kubernetes 노드 구성
 - `k8s_join_control.yaml` : 컨트롤 플레인 노드를 Kubernetes 클러스터에 조인
 - `k8s_join_worker.yaml` : 워커 노드를 Kubernetes 클러스터에 조인
-- `kube_copy_admin_conf.yaml` : Kubernetes 클러스터 관리를 위한 설정 파일을 사용자 환경에 복사
+- `k8s_copy_admin_conf.yaml` : Kubernetes 클러스터 관리를 위한 설정 파일을 사용자 환경에 복사
 - `k8s_helm_metrics_server.yaml` : Kubernetes Metrics Server 배포
 
 
