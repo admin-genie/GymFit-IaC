@@ -1,4 +1,5 @@
-# TargetGroup
+# 1.Target Group
+# Target group for external services (30090)
 resource "aws_lb_target_group" "service_tg" {
   name     = "${var.naming}-service-tg"
   port     = 30090
@@ -16,6 +17,7 @@ resource "aws_lb_target_group" "service_tg" {
   }
 }
 
+# Target group for Argo CD (30080)
 resource "aws_lb_target_group" "argocd_tg" {
   name     = "${var.naming}-argocd-tg"
   port     = 30080
@@ -33,6 +35,7 @@ resource "aws_lb_target_group" "argocd_tg" {
   }
 }
 
+# Target group for Monitoring (30081)
 resource "aws_lb_target_group" "monitoring_tg" {
   name     = "${var.naming}-monitoring-tg"
   port     = 30081
@@ -51,6 +54,7 @@ resource "aws_lb_target_group" "monitoring_tg" {
   }
 }
 
+# Target group for Kubernetes ALB (6443)
 resource "aws_lb_target_group" "kube_alb_tg" {
   name        = "${var.naming}-alb-tg"
   port        = 6443
@@ -67,7 +71,8 @@ resource "aws_lb_target_group" "kube_alb_tg" {
   }
 }
 
-# LoadBalancer
+# 2. Load Balancer
+# Public ALB
 resource "aws_lb" "srv_alb" {
   name               = "${var.naming}-alb"
   internal           = false
@@ -76,6 +81,7 @@ resource "aws_lb" "srv_alb" {
   subnets            = var.pubSubIds
 }
 
+# Private ALB
 resource "aws_lb" "kube_alb" {
   name                             = "${var.naming}-kube-alb"
   internal                         = true
@@ -86,6 +92,7 @@ resource "aws_lb" "kube_alb" {
   security_groups            = [aws_security_group.alb_sg.id]
 }
 
+# ACM Certificate
 resource "aws_acm_certificate" "kube_api_cert" {
   domain_name       = "api.gymfit.site"
   validation_method = "DNS"
@@ -103,20 +110,8 @@ data "aws_acm_certificate" "kube_api_cert_data" {
   domain = aws_acm_certificate.kube_api_cert.domain_name
 }
 
-# LB Listener
-resource "aws_lb_listener" "kube_api" {
-  load_balancer_arn = aws_lb.kube_alb.arn
-  port              = "6443"
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = data.aws_acm_certificate.kube_api_cert_data.arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.kube_alb_tg.arn
-  }
-}
-
+# 3.Listener
+# Public ALB Listener for ArgoCD
 resource "aws_lb_listener" "argocd_listener" {
   load_balancer_arn = aws_lb.srv_alb.arn
   port              = "443"
@@ -130,6 +125,7 @@ resource "aws_lb_listener" "argocd_listener" {
   }
 }
 
+# Public ALB Listener for Monitoring
 resource "aws_lb_listener" "monitoring_alb_nodeport" {
   load_balancer_arn = aws_lb.srv_alb.arn
   port              = 82
@@ -141,12 +137,23 @@ resource "aws_lb_listener" "monitoring_alb_nodeport" {
   }
 }
 
-# aws_key_pair resource 설정
-resource "aws_key_pair" "terraform_key_pair" {
-  # 등록할 key pair의 name
-  key_name = var.keyName
+# Private ALB Listener for Kubernetes API
+resource "aws_lb_listener" "kube_api" {
+  load_balancer_arn = aws_lb.kube_alb.arn
+  port              = "6443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = data.aws_acm_certificate.kube_api_cert_data.arn
 
-  # public_key = "{.pub 파일 내용}"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.kube_alb_tg.arn
+  }
+}
+
+# 4. Key Pair Definition
+resource "aws_key_pair" "terraform_key_pair" {
+  key_name   = var.keyName
   public_key = file("./.ssh/${var.keyName}.pub")
 
   tags = {
@@ -154,7 +161,8 @@ resource "aws_key_pair" "terraform_key_pair" {
   }
 }
 
-# Instance
+# 5.Instance
+# Bastion Host
 resource "aws_instance" "bastion_host" {
   count           = length(var.pubSubIds)
   ami             = var.bastionAmi
@@ -172,7 +180,7 @@ resource "aws_instance" "bastion_host" {
   }
 }
 
-
+# Kubernetes Controller
 resource "aws_instance" "kube_controller" {
   count         = var.kubeCtlCount
   ami           = var.kubeCtlAmi
@@ -195,33 +203,38 @@ resource "aws_instance" "kube_controller" {
   }
 }
 
+# Attach Kubernetes Controller to Private ALB
 resource "aws_lb_target_group_attachment" "tg-attach_controller" {
   count            = var.kubeCtlCount
   target_group_arn = aws_lb_target_group.kube_alb_tg.arn
   target_id        = element(aws_instance.kube_controller.*.private_ip, count.index)
 }
 
+# Kubernetes Worker
 resource "aws_instance" "kube_worker" {
-  count         = var.kubeNodCount
-  ami           = var.kubeNodAmi
-  instance_type = var.kubeNodType
-  subnet_id     = count.index % 2 == 0 ? var.pvtAppSubAIds : var.pvtAppSubCIds
-  key_name      = var.keyName
-
+  count               = var.kubeNodCount
+  ami                 = var.kubeNodAmi
+  instance_type       = var.kubeNodType
+  subnet_id           = count.index % 2 == 0 ? var.pvtAppSubAIds : var.pvtAppSubCIds
+  key_name            = var.keyName
   vpc_security_group_ids = [var.kubeControllerSGIds, var.albSGIds]
 
   root_block_device {
     volume_size = var.kubeNodVolume
   }
 
+
+  # Register worker to Public ALB (ArgoCD)
   provisioner "local-exec" {
     command = "aws elbv2 register-targets --target-group-arn ${aws_lb_target_group.argocd_tg.arn} --targets Id=${self.id}"
   }
 
+  # Register worker to Public ALB (Monitoring)
   provisioner "local-exec" {
     command = "aws elbv2 register-targets --target-group-arn ${aws_lb_target_group.monitoring_tg.arn} --targets Id=${self.id}"
   }
 
+  # Register worker to Public ALB (Service)
   provisioner "local-exec" {
     command = "aws elbv2 register-targets --target-group-arn ${aws_lb_target_group.service_tg.arn} --targets Id=${self.id}"
   }
@@ -233,6 +246,7 @@ resource "aws_instance" "kube_worker" {
   }
 }
 
+# 6.Database
 resource "aws_instance" "db" {
   count           = length(var.pubSubIds)
   ami             = var.kubeNodAmi

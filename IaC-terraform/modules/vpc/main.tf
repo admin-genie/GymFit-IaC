@@ -11,7 +11,7 @@ resource "aws_vpc" "def_vpc" {
   }
 }
 
-# Create Public Subnet
+# Create Public Subnet (A/C)
 resource "aws_subnet" "pub_a" {
   vpc_id            = aws_vpc.def_vpc.id
   cidr_block        = cidrsubnet(var.cidrBlock, 9, 0)
@@ -30,7 +30,7 @@ resource "aws_subnet" "pub_c" {
   }
 }
 
-# Create Private Subnet
+# Create Private Subnet APP (A/C)
 resource "aws_subnet" "pri_app_a" {
   vpc_id            = aws_vpc.def_vpc.id
   cidr_block        = cidrsubnet(var.cidrBlock, 9, 2)
@@ -49,6 +49,7 @@ resource "aws_subnet" "pri_app_c" {
   }
 }
 
+# Create Private Subnet DB (A/C)
 resource "aws_subnet" "pri_db_a" {
   vpc_id            = aws_vpc.def_vpc.id
   cidr_block        = cidrsubnet(var.cidrBlock, 9, 4)
@@ -75,7 +76,7 @@ resource "aws_internet_gateway" "def_igw" {
   }
 }
 
-# Create a Public Route table
+# Create Public Route table (A/C)
 resource "aws_route_table" "pub_rtb_a" {
   vpc_id = aws_vpc.def_vpc.id
   tags = {
@@ -90,7 +91,7 @@ resource "aws_route_table" "pub_rtb_c" {
   }
 }
 
-# Create a APP Private Route table
+# Create Private Route table APP (A/C)
 resource "aws_route_table" "pri_app_rtb_a" {
   vpc_id = aws_vpc.def_vpc.id
   tags = {
@@ -104,7 +105,8 @@ resource "aws_route_table" "pri_app_rtb_c" {
     Name = "${var.naming}-pri-app-rtb-c"
   }
 }
-# Create a DB Private Route table
+
+# Create Private Route table DB (A/C)
 resource "aws_route_table" "pri_db_rtb_a" {
   vpc_id = aws_vpc.def_vpc.id
   tags = {
@@ -131,31 +133,31 @@ resource "aws_route_table_association" "public_route_table_association_c" {
   route_table_id = aws_route_table.pub_rtb_c.id
 }
 
-# Private app Route Table Association A
+# Private Route Table Association APP A
 resource "aws_route_table_association" "pri_association_a" {
   subnet_id      = aws_subnet.pri_app_a.id
   route_table_id = aws_route_table.pri_app_rtb_a.id
 }
 
-# Private app Route Table Association C
+# Private Route Table Association APP C
 resource "aws_route_table_association" "pri_association_c" {
   subnet_id      = aws_subnet.pri_app_c.id
   route_table_id = aws_route_table.pri_app_rtb_c.id
 }
 
-# Private app Route Table Association A
+# Private Route Table Association DB A
 resource "aws_route_table_association" "pri_db_association_a" {
   subnet_id      = aws_subnet.pri_db_a.id
   route_table_id = aws_route_table.pri_db_rtb_a.id
 }
 
-# Private app Route Table Association C
+# Private Route Table Association DB C
 resource "aws_route_table_association" "pri_db_association_c" {
   subnet_id      = aws_subnet.pri_db_c.id
   route_table_id = aws_route_table.pri_db_rtb_c.id
 }
 
-# Create a EIP
+# Create a EIP (A/C)
 resource "aws_eip" "nat_eip_a" {
   domain = "vpc"
   lifecycle {
@@ -176,7 +178,7 @@ resource "aws_eip" "nat_eip_c" {
   }
 }
 
-# Create NAT Gatway
+# Create NAT Gatway (A/C)
 resource "aws_nat_gateway" "nat_a" {
   allocation_id = aws_eip.nat_eip_a.id
   subnet_id     = aws_subnet.pub_a.id
@@ -193,7 +195,7 @@ resource "aws_nat_gateway" "nat_c" {
   }
 }
 
-# Associate Public Subnet with Internet Gateway
+# Associate Public Subnet with Internet Gateway (A/C)
 resource "aws_route" "pub_r_a" {
   route_table_id         = aws_route_table.pub_rtb_a.id
   destination_cidr_block = "0.0.0.0/0"
@@ -206,7 +208,7 @@ resource "aws_route" "pub_r_c" {
   gateway_id             = aws_internet_gateway.def_igw.id
 }
 
-# Associate Private Subnets with NAT Gateway
+# Associate Private Subnets with NAT Gateway APP (A/C)
 resource "aws_route" "pri_app_route_a" {
   route_table_id         = aws_route_table.pri_app_rtb_a.id
   destination_cidr_block = "0.0.0.0/0"
@@ -219,6 +221,7 @@ resource "aws_route" "pri_app_route_c" {
   nat_gateway_id         = aws_nat_gateway.nat_c.id
 }
 
+# Associate Private Subnets with NAT Gateway DB (A/C)
 resource "aws_route" "pri_db_route_a" {
   route_table_id         = aws_route_table.pri_db_rtb_a.id
   destination_cidr_block = "0.0.0.0/0"

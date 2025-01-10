@@ -2,7 +2,7 @@ cidrBlock = {
     default = "10.0.0.0/16"
 }
 
-# Security Groups setting
+# Security Group Rules
 
 # bastion_ingress_rules = [
 #   {

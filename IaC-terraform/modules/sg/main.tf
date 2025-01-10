@@ -1,4 +1,5 @@
 # Security Group
+# Bastion Host Security Group
 resource "aws_security_group" "bastion_sg" {
   name   = "${var.naming}_bastion_sg"
   vpc_id = var.defVpcId
@@ -22,6 +23,7 @@ resource "aws_security_group" "bastion_sg" {
   }
 }
 
+# ALB Security Group
 resource "aws_security_group" "alb_sg" {
   name   = "${var.naming}_alb_sg"
   vpc_id = var.defVpcId
@@ -52,6 +54,7 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
+# Kubernetes Controller Security Group
 resource "aws_security_group" "kube_controller_sg" {
   name   = "${var.naming}_kube_controller_sg"
   vpc_id = var.defVpcId
@@ -99,6 +102,7 @@ resource "aws_security_group" "kube_controller_sg" {
   }
 }
 
+# Kubernetes Worker Security Group
 resource "aws_security_group" "kube_worker_sg" {
   name   = "${var.naming}_kube_worker_sg"
   vpc_id = var.defVpcId
@@ -153,6 +157,7 @@ resource "aws_security_group" "kube_worker_sg" {
   }
 }
 
+# DB (MySQL) Security Group
 resource "aws_security_group" "db_mysql_sg" {
   name        = "${var.naming}-mysql-sg"
   vpc_id      = var.defVpcId
