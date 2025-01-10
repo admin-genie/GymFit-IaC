@@ -1,6 +1,6 @@
 
 ## IaC-Ansible 설명
-Ansible을 사용하여 인프라를 코드로 관리(IaC, Infrastructure as Code)하기 위한 플레이북 및 설정 파일이다. 여러 디렉터리로 구성되어 있으며, 각 디렉터리는 특정 도구와 환경 설정을 자동화하는 데 사용된다. Ansible 서버는 Terraform의 terraform output -json 명령어를 사용해 인프라 정보를 JSON 파일로 저장한 뒤, Bash Shell Script를 활용하여 자동으로 구성되었습니다.
+Ansible을 사용하여 인프라를 코드로 관리(IaC, Infrastructure as Code)하기 위한 플레이북 및 설정 파일이다. 여러 디렉터리로 구성되어 있으며, 각 디렉터리는 특정 도구와 환경 설정을 자동화하는 데 사용된다. Ansible 서버는 Terraform의 terraform output -json 명령어를 사용해 인프라 정보를 JSON 파일로 저장한 뒤, Bash Shell Script를 활용하여 자동으로 구성되었다.
 
 ### 프로젝트 디렉터리 및 파일 설명
 ### argocd
